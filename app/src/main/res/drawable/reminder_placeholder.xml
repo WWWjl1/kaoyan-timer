@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 提醒图片占位：白底 + 深蓝时钟。之后在 App 里从相册换图即可，无需重编译 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4,60 a56,56 0 1,1 112,0 a56,56 0 1,1 -112,0 Z" />
+    <path
+        android:strokeColor="#303F9F"
+        android:strokeWidth="7"
+        android:fillColor="#00000000"
+        android:pathData="M34,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" />
+    <path
+        android:strokeColor="#303F9F"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M60,60 L60,45 M60,60 L69,61" />
+</vector>

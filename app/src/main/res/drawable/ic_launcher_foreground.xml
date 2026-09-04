@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 启动器前景：白色圆环时钟，置于 ic_bg 底色上 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:fillColor="#00000000"
+        android:pathData="M30,54 a24,24 0 1,1 48,0 a24,24 0 1,1 -48,0" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,54 L54,40 M54,54 L63,55" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,50.5 a3.5,3.5 0 1,0 0.01,0 Z" />
+</vector>

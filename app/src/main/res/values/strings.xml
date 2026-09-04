@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">考研自律钟</string>
+    <string name="main_subtitle">亮屏提醒 · 防沉迷自律计时</string>
+    <string name="notif_channel_monitor">计时服务</string>
+    <string name="notif_monitoring">监测中：每次亮屏会请你选择时长</string>
+    <string name="notif_timeup">时间到！点悬浮窗图片锁屏</string>
+</resources>

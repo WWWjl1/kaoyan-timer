@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 到点悬浮提醒：全屏暗底 + 图片 + 文案，点任意处触发（由代码绑定点击） -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/overlay_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#E61A2140"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingLeft="28dp"
+        android:paddingRight="28dp">
+
+        <ImageView
+            android:id="@+id/overlay_image"
+            android:layout_width="280dp"
+            android:layout_height="280dp"
+            android:contentDescription="提醒图片"
+            android:scaleType="fitCenter" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:gravity="center"
+            android:text="时间到啦，该回去学习了！\n休息是为了更好地冲刺 ✊"
+            android:textColor="#FFFFFF"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="点一下屏幕 → 自动锁屏"
+            android:textColor="#AAB3D6"
+            android:textSize="14sp" />
+    </LinearLayout>
+</FrameLayout>

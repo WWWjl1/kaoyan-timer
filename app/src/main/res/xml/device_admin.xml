@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 只需 lockNow() 锁屏，无需任何受限策略 -->
+    <uses-policies />
+</device-admin>

@@ -1,0 +1,17 @@
+pluginManagement {
+    repositories {
+        // 官方源：GitHub 云端访问最稳，阿里云镜像会 502 拖后腿
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "ScreenGuardTimer"
+include ':app'

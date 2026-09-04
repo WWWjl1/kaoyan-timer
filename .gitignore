@@ -1,0 +1,17 @@
+# 构建产物
+app/build/
+build/
+.gradle/
+local.properties
+
+# 压缩包 / 解压副本 / APK
+*.zip
+kaoyan-timer-src/
+kaoyan-timer-src (2)/
+kaoyan-timer-src (3)/
+*.apk
+
+# IDE
+.idea/
+*.iml
+.DS_Store
