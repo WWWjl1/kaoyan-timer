@@ -86,6 +86,24 @@ public final class OverlayManager {
 
     /** doLock=true：点击收起并锁屏；false：仅收起（如屏幕被系统关掉） */
     public static void dismiss(Context context, boolean doLock) {
+        if (doLock) {
+            // 先尝试锁屏；锁成功则收起，失败则保留悬浮窗强制挡屏（逼用户按电源键锁屏）
+            boolean locked = requestLock(context);
+            stopVibrate();
+            if (locked) {
+                removeViewSafely();
+                ScreenGuardService.state = ScreenGuardService.STATE_IDLE;
+                ScreenGuardService.notifyMonitoring(context);
+            } else {
+                Toast.makeText(context, "自动锁屏失败：请按一下电源键锁屏（悬浮窗会挡住你）", Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+        removeViewSafely();
+        stopVibrate();
+    }
+
+    private static void removeViewSafely() {
         try {
             if (overlayView != null && windowManager != null) {
                 windowManager.removeView(overlayView);
@@ -93,13 +111,6 @@ public final class OverlayManager {
         } catch (Exception ignored) {
         }
         overlayView = null;
-        stopVibrate();
-
-        if (doLock) {
-            ScreenGuardService.state = ScreenGuardService.STATE_IDLE;
-            ScreenGuardService.notifyMonitoring(context);
-            requestLock(context);
-        }
     }
 
     private static void vibrate(Context context) {
@@ -122,23 +133,23 @@ public final class OverlayManager {
         vibrator = null;
     }
 
-    private static void requestLock(Context context) {
+    private static boolean requestLock(Context context) {
         DevicePolicyManager dpm =
                 (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
         ComponentName cn = new ComponentName(context, LockAdminReceiver.class);
         if (dpm != null && dpm.isAdminActive(cn)) {
             try {
                 dpm.lockNow();
-                return;
+                return true;
             } catch (Exception ignored) {
                 // iQOO/OriginOS 上 lockNow 常触发异常，改走无障碍锁屏
             }
         }
         // 无障碍锁屏兜底（国产机更可靠）
         if (AccessLockService.isEnabled() && AccessLockService.lock()) {
-            return;
+            return true;
         }
-        Toast.makeText(context, "自动锁屏失败：请在系统设置开启本应用的「无障碍/辅助功能」，或手动按电源键锁屏", Toast.LENGTH_LONG).show();
+        return false;
     }
 
     private static int usedMinutes(Context c) {
