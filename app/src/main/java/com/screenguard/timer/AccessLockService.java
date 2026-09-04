@@ -14,6 +14,7 @@ import android.view.accessibility.AccessibilityEvent;
 public class AccessLockService extends AccessibilityService {
 
     private static boolean enabled = false;
+    private static AccessLockService instance;
 
     public static boolean isEnabled() {
         return enabled;
@@ -21,9 +22,9 @@ public class AccessLockService extends AccessibilityService {
 
     /** 执行锁屏，成功返回 true */
     public static boolean lock() {
-        if (!enabled) return false;
+        if (instance == null) return false;
         try {
-            return performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
+            return instance.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
         } catch (Exception e) {
             return false;
         }
@@ -40,6 +41,7 @@ public class AccessLockService extends AccessibilityService {
     @Override
     public void onServiceConnected() {
         super.onServiceConnected();
+        instance = this;
         enabled = true;
     }
 
@@ -54,6 +56,7 @@ public class AccessLockService extends AccessibilityService {
 
     @Override
     public void onDestroy() {
+        instance = null;
         enabled = false;
         super.onDestroy();
     }
