@@ -7,8 +7,9 @@ import android.content.Intent;
 import android.view.accessibility.AccessibilityEvent;
 
 /**
- * 无障碍锁屏兜底：iQOO/OriginOS 上设备管理器的 lockNow() 常触发异常，
- * 改用系统无障碍接口 GLOBAL_ACTION_LOCK_SCREEN 锁屏，更可靠。
+ * 无障碍服务：两个用途
+ * 1) 锁屏兜底：设备管理器 lockNow() 在 iQOO 上常失效，用 GLOBAL_ACTION_LOCK_SCREEN 兜底；
+ * 2) 娱乐超限锁机：监听前台 App，锁机状态下非白名单应用（电话/豆包/不背单词/扇贝考研 之外）被拉回并显示锁机横幅。
  * 需在系统设置开启本应用的「无障碍 / 辅助功能」。
  */
 public class AccessLockService extends AccessibilityService {
@@ -30,7 +31,7 @@ public class AccessLockService extends AccessibilityService {
         }
     }
 
-    /** 打开系统"无障碍"设置页，让用户开启本应用 */
+    /** 打开系统"无障碍"设置页 */
     public static void openSettings(Context context) {
         try {
             context.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
@@ -47,7 +48,38 @@ public class AccessLockService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // 不处理任何事件，仅用于锁屏
+        // 未处于锁机状态：什么都不做
+        if (!LockGuard.isLocked(this)) return;
+        CharSequence pkg = event.getPackageName();
+        if (isWhitelisted(pkg)) return;
+        // 非白名单应用出现在前台：显示锁机横幅 + 拉回桌面
+        LockOverlay.show(this);
+        try {
+            performGlobalAction(GLOBAL_ACTION_HOME);
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** 锁机期间允许的包名：系统/电话/桌面/设置 + 三个学习 App */
+    private boolean isWhitelisted(CharSequence pkg) {
+        if (pkg == null) return false;
+        String p = pkg.toString();
+        if (p.equals("com.screenguard.timer")) return true;               // 本 App
+        if (p.startsWith("com.android")) return true;                       // 系统（电话/桌面/设置/系统UI 多为 com.android.*）
+        if (p.contains("dialer") || p.contains("contacts")
+                || p.contains("launcher") || p.contains("settings")
+                || p.contains("phone") || p.contains("keyboard")) return true;
+        // 各厂商系统 App（避免误拦 iQOO/vivo 的拨号等）
+        if (p.startsWith("com.vivo") || p.startsWith("com.bbk")
+                || p.startsWith("com.oplus") || p.startsWith("com.oneplus")
+                || p.startsWith("com.iqoo") || p.startsWith("com.coloros")
+                || p.startsWith("com.huawei") || p.startsWith("com.xiaomi")
+                || p.startsWith("com.samsung") || p.startsWith("com.oppo")) return true;
+        // 用户允许的三个学习 App
+        if (p.equals("com.larus.nova")) return true;                      // 豆包
+        if (p.equals("cn.com.langeasy.LangEasyLexis")) return true;       // 不背单词
+        if (p.equals("com.shanbay.kaoyan")) return true;                  // 扇贝考研
+        return false;
     }
 
     @Override

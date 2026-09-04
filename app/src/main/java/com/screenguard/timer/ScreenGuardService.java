@@ -189,6 +189,7 @@ public class ScreenGuardService extends Service {
             state = STATE_IDLE;
             cancelTick();
             updateNotification(getString(R.string.notif_monitoring));
+            LockGuard.maybeEnterLock(this);
         } else if (state == STATE_ALERT) {
             // 屏幕关了，悬浮窗自动收起；状态保留 ALERT，解锁后重新弹出
             OverlayManager.dismiss(getApplicationContext(), false);
@@ -278,6 +279,7 @@ public class ScreenGuardService extends Service {
         roundId = -1;
         updateNotification(getString(R.string.notif_timeup));
         OverlayManager.show(this);
+        LockGuard.maybeEnterLock(this);
     }
 
     // ---------------------------------------------------------------- 通知

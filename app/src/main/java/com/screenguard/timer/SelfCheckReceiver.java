@@ -22,5 +22,7 @@ public class SelfCheckReceiver extends BroadcastReceiver {
         if (!ScreenGuardService.isRunning()) {
             ScreenGuardService.startMonitor(context);
         }
+        // 检查娱乐累计阈值，可能触发锁机
+        LockGuard.maybeEnterLock(context);
     }
 }
