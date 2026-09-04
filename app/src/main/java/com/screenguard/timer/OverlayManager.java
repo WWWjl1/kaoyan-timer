@@ -12,7 +12,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.Calendar;
 
 /**
  * 到点提醒悬浮窗：全屏半透明 + 图片(用户图/占位图) + 震动。
@@ -49,6 +52,12 @@ public final class OverlayManager {
                 image.setImageBitmap(userBmp);
             } else {
                 image.setImageResource(R.drawable.reminder_placeholder);
+            }
+
+            // 显示今日已用时长
+            TextView used = overlayView.findViewById(R.id.overlay_used);
+            if (used != null) {
+                used.setText("今日已用 " + usedMinutes(app) + " 分钟");
             }
 
             // 点屏幕任意处：收起 + 锁屏
@@ -130,5 +139,23 @@ public final class OverlayManager {
             return;
         }
         Toast.makeText(context, "自动锁屏失败：请在系统设置开启本应用的「无障碍/辅助功能」，或手动按电源键锁屏", Toast.LENGTH_LONG).show();
+    }
+
+    private static int usedMinutes(Context c) {
+        try {
+            StatDb sdb = new StatDb(c);
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            long ds = cal.getTimeInMillis();
+            StatDb.DayStat st = sdb.dayStats(ds, ds + 24 * 3600_000L);
+            int m = Math.round((st.studyMs + st.funMs) / 60000f);
+            sdb.close();
+            return m;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }

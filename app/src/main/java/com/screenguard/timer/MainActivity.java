@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
     private LinearLayout weekTable;
     private TextView imageStatus;
     private HourBarView hourBar;
-    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility;
+    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit;
 
     private View pageToday, pageRecord, pagePerms;
     private TextView tabToday, tabRecord, tabPerms;
@@ -66,6 +66,8 @@ public class MainActivity extends Activity {
         db = new StatDb(this);
 
         if (ScreenGuardService.isEnabled(this)) {
+            // 手动打开 App = 之前退出的恢复点
+            ScreenGuardService.setSuspended(this, false);
             ScreenGuardService.startMonitor(this);
         }
 
@@ -82,6 +84,7 @@ public class MainActivity extends Activity {
         btnBattery = findViewById(R.id.btn_battery);
         btnNotif = findViewById(R.id.btn_notif);
         btnAccessibility = findViewById(R.id.btn_accessibility);
+        btnExit = findViewById(R.id.btn_exit);
         btnChange = findViewById(R.id.btn_change_image);
 
         pageToday = findViewById(R.id.page_today);
@@ -118,6 +121,7 @@ public class MainActivity extends Activity {
         btnBattery.setOnClickListener(v -> openBatterySetting());
         btnNotif.setOnClickListener(v -> requestNotificationPermission());
         btnAccessibility.setOnClickListener(v -> openAccessibilitySetting());
+        btnExit.setOnClickListener(v -> onExitApp());
         btnChange.setOnClickListener(v -> openImagePicker());
     }
 
@@ -340,6 +344,13 @@ public class MainActivity extends Activity {
     private void openAccessibilitySetting() {
         if (AccessLockService.isEnabled()) return;
         AccessLockService.openSettings(this);
+    }
+
+    private void onExitApp() {
+        ScreenGuardService.setSuspended(this, true);
+        ScreenGuardService.stopMonitor(this);
+        Toast.makeText(this, "已退出：自动检测已暂停，下次打开 App 才恢复", Toast.LENGTH_LONG).show();
+        refresh();
     }
 
     // ---------------------------------------------------------------- 更换提醒图片

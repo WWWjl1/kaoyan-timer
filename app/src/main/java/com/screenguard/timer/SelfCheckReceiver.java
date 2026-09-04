@@ -5,17 +5,21 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * 自检闹钟接收器：到点自动续订下一次闹钟，并把可能被系统杀掉的服务重新拉起。
- * 闹钟由系统调度（AlarmManager），不依赖 App 进程存活，因此能抵抗后台清理。
+ * 自检闹钟接收器：每 2 分钟检测一次，若监测服务不在运行就重新拉起。
+ * 用户主动「退出 App」后会暂停检测，直到下次手动打开 App 才恢复。
  */
 public class SelfCheckReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        // 总开关关闭，或用户主动退出 -> 暂停自动检测
+        if (!ScreenGuardService.isEnabled(context) || ScreenGuardService.isSuspended(context)) {
+            return;
+        }
         // 先续订下一次自检（保证链条不断）
         ScreenGuardService.scheduleSelfCheck(context);
-        // 再确保监测服务在运行（幂等：已在跑则无副作用）
-        if (ScreenGuardService.isEnabled(context)) {
+        // 若服务不在运行则重启
+        if (!ScreenGuardService.isRunning()) {
             ScreenGuardService.startMonitor(context);
         }
     }

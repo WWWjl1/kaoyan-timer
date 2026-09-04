@@ -13,8 +13,8 @@ public class BootReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent == null) return;
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            if (ScreenGuardService.isEnabled(context)) {
-                // 先埋下自检闹钟，再拉起监测服务
+            if (ScreenGuardService.isEnabled(context) && !ScreenGuardService.isSuspended(context)) {
+                // 先埋下自检闹钟（每 2 分钟），再拉起监测服务
                 ScreenGuardService.scheduleSelfCheck(context);
                 ScreenGuardService.startMonitor(context);
             }

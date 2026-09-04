@@ -37,6 +37,7 @@ public class ScreenGuardService extends Service {
     public static final String KEY_LAST_MINUTES = "last_minutes";
     public static final String KEY_LAST_STUDY = "last_study";
     public static final String KEY_LAST_FUN = "last_fun";
+    public static final String KEY_SUSPENDED = "suspended";
 
     public static final int STATE_IDLE = 0;
     public static final int STATE_COUNTING = 1;
@@ -50,8 +51,8 @@ public class ScreenGuardService extends Service {
     private static final String CHANNEL_ID = "monitor";
     private static final int NOTIF_ID = 1;
 
-    /** 自检闹钟间隔：即使服务被系统杀掉，最多这么久后自动复活（抗国产系统杀后台） */
-    private static final long SELF_CHECK_INTERVAL_MS = 20 * 60_000L;
+    /** 自检闹钟间隔：每 2 分钟检测一次，不在运行就重启（抗国产系统杀后台） */
+    private static final long SELF_CHECK_INTERVAL_MS = 2 * 60_000L;
 
     private static volatile ScreenGuardService instance;
 
@@ -317,6 +318,22 @@ public class ScreenGuardService extends Service {
     public static boolean isEnabled(Context context) {
         return context.getSharedPreferences(PREF_NAME, MODE_PRIVATE)
                 .getBoolean(KEY_ENABLED, true);
+    }
+
+    /** 是否被用户当前主动退出（退出后暂停检测，直到手动打开 App） */
+    public static boolean isSuspended(Context context) {
+        return context.getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                .getBoolean(KEY_SUSPENDED, false);
+    }
+
+    public static void setSuspended(Context context, boolean value) {
+        context.getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                .edit().putBoolean(KEY_SUSPENDED, value).apply();
+    }
+
+    /** 服务当前是否在运行 */
+    public static boolean isRunning() {
+        return instance != null;
     }
 
     public static void startMonitor(Context context) {
