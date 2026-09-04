@@ -89,6 +89,27 @@ public class ScreenGuardService extends Service {
         startForeground(NOTIF_ID, buildNotification(getString(R.string.notif_monitoring)));
         registerScreenReceiver();
         scheduleSelfCheck(this);
+        // 服务被系统重启后，若屏幕正亮着且未锁定，补一次弹窗（避免错过解锁事件）
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                tryLaunchIfScreenOn();
+            }
+        }, 1800);
+    }
+
+    /** 若屏幕当前亮着且未锁定、状态空闲，主动弹出选时长（弥补被杀后错过事件） */
+    private void tryLaunchIfScreenOn() {
+        if (state != STATE_IDLE || PickerOverlay.isShowing() || !isEnabled(this) || !canDrawOverlays()) {
+            return;
+        }
+        android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+        KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        boolean interactive = pm != null && pm.isInteractive();
+        boolean locked = km != null && km.isKeyguardLocked();
+        if (interactive && !locked) {
+            launchPicker();
+        }
     }
 
     /** 注册亮屏/息屏/解锁监听（Android 8+ 必须在运行时动态注册才能收到） */

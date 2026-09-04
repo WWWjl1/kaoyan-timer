@@ -10,7 +10,7 @@ import android.view.View;
  * 今日使用分布柱状图（可横向滚动）：
  * 横轴 00:00–24:00（每 1 小时一段），纵轴 0–60 分钟。
  * 学习=蓝、娱乐=橙（叠加），柱顶显示该小时总分钟数。
- * 宽度按 48dp/小时 计算，24 小时总宽超出屏幕时可左右滑动查看。
+ * 每格 24dp，总宽约 576dp，超屏可左右滑动；柱间距适中。
  */
 public class HourBarView extends View {
 
@@ -31,8 +31,8 @@ public class HourBarView extends View {
     public HourBarView(Context c, AttributeSet a) {
         super(c, a);
         float d = getResources().getDisplayMetrics().density;
-        cell = (int) (48 * d);
-        labelW = (int) (40 * d);
+        cell = (int) (24 * d);
+        labelW = (int) (38 * d);
         pStudy.setColor(0xFF2196F3);
         pFun.setColor(0xFFFF9800);
         pAxis.setColor(0xFFBDBDBD);
@@ -59,22 +59,23 @@ public class HourBarView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         float left = labelW, right = getWidth() - 4f;
-        float top = 20f, bottom = getHeight() - 26f;
+        float bottom = getHeight() - 34f;
+        float top = 20f;
         float areaW = right - left, areaH = bottom - top;
         int maxY = 60;
 
-        // 纵轴刻度
+        // 纵轴刻度（文字画在刻度线略靠下，避免与横轴重叠）
         for (int v = 0; v <= maxY; v += 15) {
             float y = bottom - (v / (float) maxY) * areaH;
             pAxis.setStrokeWidth(1f);
             canvas.drawLine(left, y, right, y, pAxis);
             pText.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText(String.valueOf(v), left - 4, y + 4, pText);
+            canvas.drawText(String.valueOf(v), left - 4, y - 4, pText);
         }
         pText.setTextAlign(Paint.Align.CENTER);
 
-        // 每根柱占 50%（左右留空隙）
-        float barW = cell * 0.5f;
+        // 每根柱占 55%（留出间隙）
+        float barW = cell * 0.55f;
         for (int i = 0; i < 24; i++) {
             float cx = left + i * cell + cell / 2f;
             float sx = cx - barW / 2f;
@@ -99,11 +100,12 @@ public class HourBarView extends View {
             }
         }
 
-        // 横轴标签：每 4 小时
+        // 横轴标签：每 4 小时，画在最底部（避开纵轴刻度）
         for (int i = 0; i <= 24; i += 4) {
             float x = left + i * cell;
             if (x > right) x = right;
-            canvas.drawText((i == 24 ? "24" : String.valueOf(i)) + ":00", x, getHeight() - 8, pText);
+            canvas.drawText((i == 24 ? "24" : String.valueOf(i)) + ":00",
+                    x, getHeight() - 8, pText);
         }
     }
 }

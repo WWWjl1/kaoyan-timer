@@ -14,8 +14,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -38,7 +40,7 @@ public class MainActivity extends Activity {
     private Switch enableSwitch;
     private TextView statusText;
     private TextView todayTotal, todayStudy, todayFun;
-    private TextView weekText;
+    private LinearLayout weekTable;
     private TextView imageStatus;
     private HourBarView hourBar;
     private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange;
@@ -72,7 +74,7 @@ public class MainActivity extends Activity {
         todayTotal = findViewById(R.id.today_total);
         todayStudy = findViewById(R.id.today_study);
         todayFun = findViewById(R.id.today_fun);
-        weekText = findViewById(R.id.week_text);
+        weekTable = findViewById(R.id.week_table);
         hourBar = findViewById(R.id.hour_bar);
         imageStatus = findViewById(R.id.image_status);
         btnOverlay = findViewById(R.id.btn_overlay);
@@ -187,7 +189,7 @@ public class MainActivity extends Activity {
             db.fillHourBuckets(dayStart, study, fun);
             hourBar.setData(study, fun);
 
-            weekText.setText(buildWeekText());
+            renderWeekTable(weekTable);
 
             boolean overlay = Settings.canDrawOverlays(this);
             setPermButton(btnOverlay, overlay, overlay ? "已开启" : "去开启");
@@ -229,7 +231,8 @@ public class MainActivity extends Activity {
 
     // ---------------------------------------------------------------- 近 7 天
 
-    private String buildWeekText() {
+    private void renderWeekTable(LinearLayout container) {
+        container.removeAllViews();
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
@@ -237,7 +240,7 @@ public class MainActivity extends Activity {
         cal.set(Calendar.MILLISECOND, 0);
         long today = cal.getTimeInMillis();
         String[] weeks = {"周日", "周一", "周二", "周三", "周四", "周五", "周六"};
-        StringBuilder sb = new StringBuilder();
+        float density = getResources().getDisplayMetrics().density;
         for (int offset = 6; offset >= 0; offset--) {
             long start = today - offset * DAY_MS;
             StatDb.DayStat ds = db.dayStats(start, start + DAY_MS);
@@ -252,13 +255,25 @@ public class MainActivity extends Activity {
                 dayLabel = (c.get(Calendar.MONTH) + 1) + "月" + c.get(Calendar.DAY_OF_MONTH) + "日 "
                         + weeks[c.get(Calendar.DAY_OF_WEEK) - 1];
             }
-            sb.append(dayLabel).append("   学习 ")
-                    .append(study).append(" 分 · 娱乐 ")
-                    .append(fun).append(" 分 · 共 ")
-                    .append(study + fun).append(" 分\n");
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setPadding(0, (int) (8 * density), 0, (int) (8 * density));
+            row.addView(cell(dayLabel, 0xFF212121, Gravity.START | Gravity.CENTER_VERTICAL, 1.6f));
+            row.addView(cell(String.valueOf(study), 0xFF2196F3, Gravity.CENTER, 1f));
+            row.addView(cell(String.valueOf(fun), 0xFFFF9800, Gravity.CENTER, 1f));
+            row.addView(cell(String.valueOf(study + fun), 0xFF212121, Gravity.CENTER, 1f));
+            container.addView(row);
         }
-        if (sb.length() > 0) sb.setLength(sb.length() - 1);
-        return sb.toString();
+    }
+
+    private TextView cell(String text, int color, int gravity, float weight) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(13);
+        tv.setTextColor(color);
+        tv.setGravity(gravity);
+        tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight));
+        return tv;
     }
 
     private long startOfToday() {

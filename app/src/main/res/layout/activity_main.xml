@@ -263,14 +263,56 @@
                         android:textColor="@color/text_gray"
                         android:textSize="12sp" />
 
-                    <TextView
-                        android:id="@+id/week_text"
+                    <LinearLayout
+                        android:id="@+id/week_table"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:lineSpacingExtra="4dp"
-                        android:textColor="@color/text_dark"
-                        android:textSize="13sp" />
+                        android:orientation="vertical">
+
+                        <!-- 表头 -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingBottom="4dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.6"
+                                android:text="日期"
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="学习"
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="娱乐"
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="合计"
+                                android:textColor="@color/text_gray"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>
