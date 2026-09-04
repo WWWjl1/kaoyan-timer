@@ -62,5 +62,18 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
+
+        <!-- 无障碍锁屏兜底：iQOO 上设备管理器锁屏不灵时用这个更可靠 -->
+        <service
+            android:name=".AccessLockService"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service" />
+        </service>
     </application>
 </manifest>

@@ -122,8 +122,13 @@ public final class OverlayManager {
                 dpm.lockNow();
                 return;
             } catch (Exception ignored) {
+                // iQOO/OriginOS 上 lockNow 常触发异常，改走无障碍锁屏
             }
         }
-        Toast.makeText(context, "未激活「锁屏管理」：请回 App 点「去激活锁屏管理」完成激活；若你刚覆盖安装过，请先卸载旧版再用本版重新激活", Toast.LENGTH_LONG).show();
+        // 无障碍锁屏兜底（国产机更可靠）
+        if (AccessLockService.isEnabled() && AccessLockService.lock()) {
+            return;
+        }
+        Toast.makeText(context, "自动锁屏失败：请在系统设置开启本应用的「无障碍/辅助功能」，或手动按电源键锁屏", Toast.LENGTH_LONG).show();
     }
 }

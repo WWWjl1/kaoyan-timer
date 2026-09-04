@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
     private LinearLayout weekTable;
     private TextView imageStatus;
     private HourBarView hourBar;
-    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange;
+    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility;
 
     private View pageToday, pageRecord, pagePerms;
     private TextView tabToday, tabRecord, tabPerms;
@@ -81,6 +81,7 @@ public class MainActivity extends Activity {
         btnDevice = findViewById(R.id.btn_deviceadmin);
         btnBattery = findViewById(R.id.btn_battery);
         btnNotif = findViewById(R.id.btn_notif);
+        btnAccessibility = findViewById(R.id.btn_accessibility);
         btnChange = findViewById(R.id.btn_change_image);
 
         pageToday = findViewById(R.id.page_today);
@@ -116,6 +117,7 @@ public class MainActivity extends Activity {
         btnDevice.setOnClickListener(v -> openDeviceAdminSetting());
         btnBattery.setOnClickListener(v -> openBatterySetting());
         btnNotif.setOnClickListener(v -> requestNotificationPermission());
+        btnAccessibility.setOnClickListener(v -> openAccessibilitySetting());
         btnChange.setOnClickListener(v -> openImagePicker());
     }
 
@@ -198,6 +200,9 @@ public class MainActivity extends Activity {
             boolean admin = dpm != null && dpm.isAdminActive(
                     new ComponentName(this, LockAdminReceiver.class));
             setPermButton(btnDevice, admin, admin ? "已激活" : "去激活");
+
+            boolean acc = AccessLockService.isEnabled();
+            setPermButton(btnAccessibility, acc, acc ? "已开启" : "去开启");
 
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             boolean battery = pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
@@ -330,6 +335,11 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 33) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
         }
+    }
+
+    private void openAccessibilitySetting() {
+        if (AccessLockService.isEnabled()) return;
+        AccessLockService.openSettings(this);
     }
 
     // ---------------------------------------------------------------- 更换提醒图片

@@ -461,6 +461,36 @@
                             android:textColor="@color/white"
                             android:textSize="13sp" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="无障碍（辅助功能，锁屏兜底）"
+                            android:textColor="@color/text_dark"
+                            android:textSize="15sp" />
+
+                        <Button
+                            android:id="@+id/btn_accessibility"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_btn_primary"
+                            android:minHeight="36dp"
+                            android:minWidth="0dp"
+                            android:paddingLeft="14dp"
+                            android:paddingRight="14dp"
+                            android:text="去开启"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            android:textSize="13sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <LinearLayout
