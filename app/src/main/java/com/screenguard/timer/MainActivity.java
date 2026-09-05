@@ -444,7 +444,6 @@ public class MainActivity extends Activity {
             del.setText("移除");
             del.setTextSize(13);
             del.setTextColor(0xFFFFFFFF);
-            del.setTextAllCaps(false);
             del.setBackgroundResource(R.drawable.bg_btn_primary);
             del.setOnClickListener(v -> {
                 removeFromWhitelist(pkg);
