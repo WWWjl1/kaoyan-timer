@@ -18,6 +18,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.NumberPicker;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -44,6 +45,7 @@ public class MainActivity extends Activity {
     private TextView imageStatus;
     private HourBarView hourBar;
     private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit;
+    private NumberPicker lockDurPicker;
 
     private View pageToday, pageRecord, pagePerms;
     private TextView tabToday, tabRecord, tabPerms;
@@ -86,6 +88,7 @@ public class MainActivity extends Activity {
         btnAccessibility = findViewById(R.id.btn_accessibility);
         btnExit = findViewById(R.id.btn_exit);
         btnChange = findViewById(R.id.btn_change_image);
+        lockDurPicker = findViewById(R.id.lock_dur_picker);
 
         pageToday = findViewById(R.id.page_today);
         pageRecord = findViewById(R.id.page_record);
@@ -123,6 +126,8 @@ public class MainActivity extends Activity {
         btnAccessibility.setOnClickListener(v -> openAccessibilitySetting());
         btnExit.setOnClickListener(v -> onExitApp());
         btnChange.setOnClickListener(v -> openImagePicker());
+
+        initLockDurationPicker();
     }
 
     /** 切换 Tab 显示 */
@@ -351,6 +356,27 @@ public class MainActivity extends Activity {
         ScreenGuardService.stopMonitor(this);
         Toast.makeText(this, "已退出：自动检测已暂停，下次打开 App 才恢复", Toast.LENGTH_LONG).show();
         refresh();
+    }
+
+    /** 锁机时长设置：2–120 分钟，10 分钟一梯度（2,10,20,...,120），改动即保存 */
+    private void initLockDurationPicker() {
+        int[] vals = {2, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120};
+        String[] labels = new String[vals.length];
+        for (int i = 0; i < vals.length; i++) labels[i] = vals[i] + " 分钟";
+        lockDurPicker.setMinValue(0);
+        lockDurPicker.setMaxValue(vals.length - 1);
+        lockDurPicker.setDisplayedValues(labels);
+        lockDurPicker.setWrapSelectorWheel(false);
+        int cur = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getInt(LockGuard.KEY_LOCK_DURATION_MIN, LockGuard.DEFAULT_LOCK_MIN);
+        int idx = 0;
+        for (int i = 0; i < vals.length; i++) {
+            if (vals[i] <= cur) idx = i;
+        }
+        lockDurPicker.setValue(idx);
+        lockDurPicker.setOnValueChangedListener((picker, oldV, newV) ->
+                getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                        .edit().putInt(LockGuard.KEY_LOCK_DURATION_MIN, vals[newV]).apply());
     }
 
     // ---------------------------------------------------------------- 更换提醒图片

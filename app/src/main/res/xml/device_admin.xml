@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <device-admin xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 声明一个真实策略：部分国产 ROM（iQOO/OriginOS）要求非空才真正认可设备管理器，否则 lockNow 被拒 -->
-    <uses-policies>
-        <limit-password />
-    </uses-policies>
+    <!-- 只需 lockNow() 锁屏，无需受限策略（还原为实测可用配置） -->
+    <uses-policies />
 </device-admin>

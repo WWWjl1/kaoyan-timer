@@ -84,18 +84,17 @@ public final class OverlayManager {
         }
     }
 
-    /** doLock=true：点击收起并锁屏；false：仅收起（如屏幕被系统关掉） */
+    /** doLock=true：点击尝试锁屏；false：仅收起（如屏幕被系统关掉） */
     public static void dismiss(Context context, boolean doLock) {
         if (doLock) {
-            // 先尝试锁屏；锁成功则收起，失败则保留悬浮窗强制挡屏（逼用户按电源键锁屏）
             boolean locked = requestLock(context);
             stopVibrate();
-            if (locked) {
-                removeViewSafely();
-                ScreenGuardService.state = ScreenGuardService.STATE_IDLE;
-                ScreenGuardService.notifyMonitoring(context);
-            } else {
-                Toast.makeText(context, "自动锁屏失败：请按一下电源键锁屏（悬浮窗会挡住你）", Toast.LENGTH_LONG).show();
+            // 无论如何都收干净（结束本轮提醒），避免下次亮屏再弹提醒而非重新选时长
+            removeViewSafely();
+            ScreenGuardService.state = ScreenGuardService.STATE_IDLE;
+            ScreenGuardService.notifyMonitoring(context);
+            if (!locked) {
+                Toast.makeText(context, "自动锁屏失败：请按一下电源键锁屏", Toast.LENGTH_LONG).show();
             }
             return;
         }

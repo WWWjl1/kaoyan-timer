@@ -12,8 +12,9 @@ import java.util.Calendar;
 public final class LockGuard {
 
     public static final String KEY_LOCK_UNTIL = "lock_until";
-    public static final long LOCK_DURATION_MS = 60_000L;   // 锁机时长：1 分钟（先做短一点方便测试）
-    public static final int FUN_THRESHOLD_MIN = 60;          // 娱乐累计 60 分钟触发
+    public static final String KEY_LOCK_DURATION_MIN = "lock_dur_min";
+    public static final int DEFAULT_LOCK_MIN = 20;           // 默认锁机 20 分钟（记录页可改 2-120）
+    public static final int FUN_THRESHOLD_MIN = 120;          // 娱乐累计 120 分钟（2 小时）触发
     public static final long DAY_MS = 24 * 3600_000L;
 
     private static final String PREF = ScreenGuardService.PREF_NAME;
@@ -31,7 +32,14 @@ public final class LockGuard {
     }
 
     public static void setLock(Context c) {
-        prefs(c).edit().putLong(KEY_LOCK_UNTIL, System.currentTimeMillis() + LOCK_DURATION_MS).apply();
+        prefs(c).edit().putLong(KEY_LOCK_UNTIL,
+                System.currentTimeMillis() + getLockDurationMs(c)).apply();
+    }
+
+    /** 锁机时长（毫秒），来自记录页设置的分钟数 */
+    public static long getLockDurationMs(Context c) {
+        int min = prefs(c).getInt(KEY_LOCK_DURATION_MIN, DEFAULT_LOCK_MIN);
+        return min * 60_000L;
     }
 
     public static void clearLock(Context c) {
