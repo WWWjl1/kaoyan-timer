@@ -39,6 +39,7 @@ public class ScreenGuardService extends Service {
     public static final String KEY_LAST_FUN = "last_fun";
     public static final String KEY_SUSPENDED = "suspended";
     public static final String KEY_WHITELIST = "whitelist";
+    public static final String KEY_LAST_ACTIVE = "last_active";
 
     public static final int STATE_IDLE = 0;
     public static final int STATE_COUNTING = 1;
@@ -60,6 +61,7 @@ public class ScreenGuardService extends Service {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable pendingLaunch;   // 延迟弹出选时长界面
     private Runnable tick;            // 倒计时每秒滴答
+    private int tickCounter = 0;      // 用于每约 10 秒刷新一次"最近活跃时刻"
 
     private StatDb db;
     private NotificationManager nm;
@@ -91,6 +93,7 @@ public class ScreenGuardService extends Service {
         startForeground(NOTIF_ID, buildNotification(getString(R.string.notif_monitoring)));
         registerScreenReceiver();
         scheduleSelfCheck(this);
+        closeStaleRounds();
         // 服务被系统重启后，若屏幕正亮着且未锁定，补一次弹窗（避免错过解锁事件）
         handler.postDelayed(new Runnable() {
             @Override
@@ -226,6 +229,13 @@ public class ScreenGuardService extends Service {
         }
     }
 
+    /** 服务重启时结清残留未结束记录（截止最近活跃时刻，不把息屏时间算进去） */
+    private void closeStaleRounds() {
+        long last = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                .getLong(KEY_LAST_ACTIVE, System.currentTimeMillis());
+        db.closeStaleRounds(last);
+    }
+
     private void launchPicker() {
         // 用悬浮窗展示选时长界面：不受「后台启动 Activity」限制，iQOO 上也不会一闪而过
         PickerOverlay.show(this);
@@ -241,9 +251,11 @@ public class ScreenGuardService extends Service {
         state = STATE_COUNTING;
         countdownEndMs = now + minutes * 60_000L;
         roundId = db.openRound(now, minutes, purpose);
+        tickCounter = 0;
 
         getSharedPreferences(PREF_NAME, MODE_PRIVATE)
-                .edit().putInt(KEY_LAST_MINUTES, minutes).apply();
+                .edit().putInt(KEY_LAST_MINUTES, minutes)
+                .putLong(KEY_LAST_ACTIVE, now).apply();
 
         updateNotification("已开始：" + minutes + " 分钟，到点会提醒你");
 
@@ -258,6 +270,11 @@ public class ScreenGuardService extends Service {
                     long sec = remain / 1000;
                     if (sec % 60 == 0) {
                         updateNotification("剩余 " + (sec / 60) + " 分钟");
+                    }
+                    // 每约 10 秒记录一次"最近活跃时刻"，供被杀时结清用（息屏后 tick 已停止，不会把息屏算进去）
+                    if (++tickCounter % 20 == 0) {
+                        getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                                .edit().putLong(KEY_LAST_ACTIVE, System.currentTimeMillis()).apply();
                     }
                     handler.postDelayed(this, 500);
                 }

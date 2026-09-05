@@ -205,6 +205,12 @@ public class MainActivity extends Activity {
             long dayStart = startOfToday();
             // 只保留最近 7 天（今天 + 前 6 天），更早的删除
             db.pruneOlderThan(dayStart - 6 * DAY_MS);
+            // 若监测服务不在运行，可能残留"未结束"记录，结清到最近活跃时刻（不把息屏时间算进去）
+            if (!ScreenGuardService.isRunning()) {
+                long lastActive = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                        .getLong(ScreenGuardService.KEY_LAST_ACTIVE, System.currentTimeMillis());
+                db.closeStaleRounds(lastActive);
+            }
 
             StatDb.DayStat ds = db.dayStats(dayStart, dayStart + DAY_MS);
             int total = Math.round((ds.studyMs + ds.funMs) / 60000f);

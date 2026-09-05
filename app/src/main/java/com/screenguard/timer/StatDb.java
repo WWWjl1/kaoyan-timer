@@ -57,6 +57,13 @@ public class StatDb extends SQLiteOpenHelper {
         getWritableDatabase().update(TABLE, cv, COL_ID + "=?", new String[]{String.valueOf(id)});
     }
 
+    /** 把异常残留的"未结束"记录（end_ms=0）结清到 lastActiveMs（被杀/息屏后不再累计到当前） */
+    public void closeStaleRounds(long lastActiveMs) {
+        getWritableDatabase().execSQL(
+                "UPDATE " + TABLE + " SET " + COL_END + " = max(" + COL_START + ", ?) WHERE " + COL_END + " = 0",
+                new Object[]{lastActiveMs});
+    }
+
     /** 删除早于 cutoff 的记录（7 天前直接清除） */
     public void pruneOlderThan(long cutoffMs) {
         getWritableDatabase().delete(TABLE, COL_START + "<?", new String[]{String.valueOf(cutoffMs)});
