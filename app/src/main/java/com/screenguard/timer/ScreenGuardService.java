@@ -38,6 +38,7 @@ public class ScreenGuardService extends Service {
     public static final String KEY_LAST_STUDY = "last_study";
     public static final String KEY_LAST_FUN = "last_fun";
     public static final String KEY_SUSPENDED = "suspended";
+    public static final String KEY_WHITELIST = "whitelist";
 
     public static final int STATE_IDLE = 0;
     public static final int STATE_COUNTING = 1;

@@ -75,10 +75,10 @@ public class AccessLockService extends AccessibilityService {
                 || p.startsWith("com.iqoo") || p.startsWith("com.coloros")
                 || p.startsWith("com.huawei") || p.startsWith("com.xiaomi")
                 || p.startsWith("com.samsung") || p.startsWith("com.oppo")) return true;
-        // 用户允许的三个学习 App
-        if (p.equals("com.larus.nova")) return true;                      // 豆包
-        if (p.equals("cn.com.langeasy.LangEasyLexis")) return true;       // 不背单词
-        if (p.equals("com.shanbay.kaoyan")) return true;                  // 扇贝考研
+        // 用户自定义白名单（可在 App「白名单」页增删）
+        java.util.Set<String> set = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getStringSet(ScreenGuardService.KEY_WHITELIST, null);
+        if (set != null && set.contains(p)) return true;
         return false;
     }
 

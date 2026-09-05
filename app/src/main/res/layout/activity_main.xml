@@ -603,6 +603,63 @@
                     android:textSize="12sp" />
             </LinearLayout>
         </ScrollView>
+
+        <!-- 页4：白名单 -->
+        <ScrollView
+            android:id="@+id/page_whitelist"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="锁机放行的软件（白名单）"
+                        android:textColor="@color/text_gray"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="锁机期间这些软件仍可用，其它会被拦回桌面"
+                        android:textColor="@color/text_dark"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btn_add_whitelist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_btn_primary"
+                        android:text="＋ 添加白名单软件"
+                        android:textAllCaps="false"
+                        android:textColor="@color/white"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/whitelist_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </ScrollView>
     </FrameLayout>
 
     <!-- 底部 Tab -->
@@ -632,6 +689,16 @@
             android:gravity="center"
             android:padding="8dp"
             android:text="记录"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/tab_whitelist"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="白名单"
             android:textSize="15sp" />
 
         <TextView

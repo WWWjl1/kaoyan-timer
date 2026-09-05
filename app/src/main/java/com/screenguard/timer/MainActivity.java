@@ -2,10 +2,12 @@ package com.screenguard.timer;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -25,6 +27,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * 主界面：三 Tab（今日 / 记录 / 权限）切换。
@@ -47,8 +52,10 @@ public class MainActivity extends Activity {
     private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit;
     private NumberPicker lockDurPicker;
 
-    private View pageToday, pageRecord, pagePerms;
-    private TextView tabToday, tabRecord, tabPerms;
+    private View pageToday, pageRecord, pagePerms, pageWhitelist;
+    private TextView tabToday, tabRecord, tabPerms, tabWhitelist;
+    private LinearLayout whitelistContainer;
+    private Button btnAddWhitelist;
 
     private boolean refreshing = false;
 
@@ -89,6 +96,9 @@ public class MainActivity extends Activity {
         btnExit = findViewById(R.id.btn_exit);
         btnChange = findViewById(R.id.btn_change_image);
         lockDurPicker = findViewById(R.id.lock_dur_picker);
+        pageWhitelist = findViewById(R.id.page_whitelist);
+        whitelistContainer = findViewById(R.id.whitelist_container);
+        btnAddWhitelist = findViewById(R.id.btn_add_whitelist);
 
         pageToday = findViewById(R.id.page_today);
         pageRecord = findViewById(R.id.page_record);
@@ -96,10 +106,12 @@ public class MainActivity extends Activity {
         tabToday = findViewById(R.id.tab_today);
         tabRecord = findViewById(R.id.tab_record);
         tabPerms = findViewById(R.id.tab_perms);
+        tabWhitelist = findViewById(R.id.tab_whitelist);
 
         tabToday.setOnClickListener(v -> showTab(0));
         tabRecord.setOnClickListener(v -> showTab(1));
-        tabPerms.setOnClickListener(v -> showTab(2));
+        tabWhitelist.setOnClickListener(v -> showTab(2));
+        tabPerms.setOnClickListener(v -> showTab(3));
         showTab(0);
 
         enableSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -126,18 +138,23 @@ public class MainActivity extends Activity {
         btnAccessibility.setOnClickListener(v -> openAccessibilitySetting());
         btnExit.setOnClickListener(v -> onExitApp());
         btnChange.setOnClickListener(v -> openImagePicker());
+        btnAddWhitelist.setOnClickListener(v -> onAddWhitelist());
 
         initLockDurationPicker();
+        ensureDefaultWhitelist();
+        renderWhitelist();
     }
 
     /** 切换 Tab 显示 */
     private void showTab(int idx) {
         pageToday.setVisibility(idx == 0 ? View.VISIBLE : View.GONE);
         pageRecord.setVisibility(idx == 1 ? View.VISIBLE : View.GONE);
-        pagePerms.setVisibility(idx == 2 ? View.VISIBLE : View.GONE);
+        pageWhitelist.setVisibility(idx == 2 ? View.VISIBLE : View.GONE);
+        pagePerms.setVisibility(idx == 3 ? View.VISIBLE : View.GONE);
         setTab(tabToday, idx == 0);
         setTab(tabRecord, idx == 1);
-        setTab(tabPerms, idx == 2);
+        setTab(tabWhitelist, idx == 2);
+        setTab(tabPerms, idx == 3);
         refresh();
     }
 
@@ -377,6 +394,112 @@ public class MainActivity extends Activity {
         lockDurPicker.setOnValueChangedListener((picker, oldV, newV) ->
                 getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
                         .edit().putInt(LockGuard.KEY_LOCK_DURATION_MIN, vals[newV]).apply());
+    }
+
+    // ---------------------------------------------------------------- 锁机白名单
+
+    private void ensureDefaultWhitelist() {
+        if (getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getStringSet(ScreenGuardService.KEY_WHITELIST, null) == null) {
+            Set<String> def = new HashSet<>();
+            def.add("com.larus.nova");                 // 豆包
+            def.add("cn.com.langeasy.LangEasyLexis");  // 不背单词
+            def.add("com.shanbay.kaoyan");             // 扇贝考研
+            getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                    .edit().putStringSet(ScreenGuardService.KEY_WHITELIST, def).apply();
+        }
+    }
+
+    private Set<String> whitelistSet() {
+        return getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getStringSet(ScreenGuardService.KEY_WHITELIST, new HashSet<String>());
+    }
+
+    private void renderWhitelist() {
+        whitelistContainer.removeAllViews();
+        List<String> pkgs = new java.util.ArrayList<>(whitelistSet());
+        if (pkgs.isEmpty()) {
+            TextView empty = new TextView(this);
+            empty.setText("还没有放行的软件，点上方「＋ 添加白名单软件」选择");
+            empty.setTextColor(0xFF757575);
+            empty.setTextSize(13);
+            whitelistContainer.addView(empty);
+            return;
+        }
+        float density = getResources().getDisplayMetrics().density;
+        for (final String pkg : pkgs) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(0, (int) (10 * density), 0, (int) (10 * density));
+
+            TextView name = new TextView(this);
+            name.setText(appLabel(pkg));
+            name.setTextColor(0xFF212121);
+            name.setTextSize(14);
+            name.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            row.addView(name);
+
+            Button del = new Button(this);
+            del.setText("移除");
+            del.setTextSize(13);
+            del.setTextColor(0xFFFFFFFF);
+            del.setTextAllCaps(false);
+            del.setBackgroundResource(R.drawable.bg_btn_primary);
+            del.setOnClickListener(v -> {
+                removeFromWhitelist(pkg);
+                renderWhitelist();
+            });
+            row.addView(del);
+            whitelistContainer.addView(row);
+        }
+    }
+
+    private String appLabel(String pkg) {
+        try {
+            PackageManager pm = getPackageManager();
+            return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() + "  (" + pkg + ")";
+        } catch (Exception e) {
+            return pkg;
+        }
+    }
+
+    private void removeFromWhitelist(String pkg) {
+        Set<String> s = new HashSet<>(whitelistSet());
+        s.remove(pkg);
+        getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .edit().putStringSet(ScreenGuardService.KEY_WHITELIST, s).apply();
+    }
+
+    private void onAddWhitelist() {
+        final List<ResolveInfo> apps = getPackageManager()
+                .queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0);
+        if (apps.isEmpty()) {
+            Toast.makeText(this, "未找到可添加的应用", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] labels = new String[apps.size()];
+        for (int i = 0; i < apps.size(); i++) {
+            CharSequence lb = apps.get(i).loadLabel(getPackageManager());
+            labels[i] = lb != null ? lb.toString() : apps.get(i).activityInfo.packageName;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("选择要放行的软件")
+                .setItems(labels, (d, which) -> {
+                    String pkg = apps.get(which).activityInfo.packageName;
+                    if (whitelistSet().contains(pkg)) {
+                        Toast.makeText(this, "已在白名单中", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Set<String> s = new HashSet<>(whitelistSet());
+                        s.add(pkg);
+                        getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                                .edit().putStringSet(ScreenGuardService.KEY_WHITELIST, s).apply();
+                        Toast.makeText(this, "已添加：" + appLabel(pkg), Toast.LENGTH_SHORT).show();
+                    }
+                    renderWhitelist();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     // ---------------------------------------------------------------- 更换提醒图片
