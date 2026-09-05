@@ -18,7 +18,10 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 import android.widget.CompoundButton;
@@ -51,6 +54,7 @@ public class MainActivity extends Activity {
     private HourBarView hourBar;
     private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit;
     private NumberPicker lockDurPicker;
+    private NumberPicker funThresholdPicker;
 
     private View pageToday, pageRecord, pagePerms, pageWhitelist;
     private TextView tabToday, tabRecord, tabPerms, tabWhitelist;
@@ -96,6 +100,7 @@ public class MainActivity extends Activity {
         btnExit = findViewById(R.id.btn_exit);
         btnChange = findViewById(R.id.btn_change_image);
         lockDurPicker = findViewById(R.id.lock_dur_picker);
+        funThresholdPicker = findViewById(R.id.fun_threshold_picker);
         pageWhitelist = findViewById(R.id.page_whitelist);
         whitelistContainer = findViewById(R.id.whitelist_container);
         btnAddWhitelist = findViewById(R.id.btn_add_whitelist);
@@ -141,6 +146,7 @@ public class MainActivity extends Activity {
         btnAddWhitelist.setOnClickListener(v -> onAddWhitelist());
 
         initLockDurationPicker();
+        initFunThresholdPicker();
         ensureDefaultWhitelist();
         renderWhitelist();
     }
@@ -402,6 +408,27 @@ public class MainActivity extends Activity {
                         .edit().putInt(LockGuard.KEY_LOCK_DURATION_MIN, vals[newV]).apply());
     }
 
+    /** 今日允许娱乐时间设置：10–240 分钟，10 分钟一梯度，改动即保存 */
+    private void initFunThresholdPicker() {
+        int[] vals = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 140, 160, 180, 200, 220, 240};
+        String[] labels = new String[vals.length];
+        for (int i = 0; i < vals.length; i++) labels[i] = vals[i] + " 分钟";
+        funThresholdPicker.setMinValue(0);
+        funThresholdPicker.setMaxValue(vals.length - 1);
+        funThresholdPicker.setDisplayedValues(labels);
+        funThresholdPicker.setWrapSelectorWheel(false);
+        int cur = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getInt(LockGuard.KEY_FUN_THRESHOLD_MIN, LockGuard.DEFAULT_FUN_THRESHOLD_MIN);
+        int idx = 0;
+        for (int i = 0; i < vals.length; i++) {
+            if (vals[i] <= cur) idx = i;
+        }
+        funThresholdPicker.setValue(idx);
+        funThresholdPicker.setOnValueChangedListener((p, oldV, newV) ->
+                getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                        .edit().putInt(LockGuard.KEY_FUN_THRESHOLD_MIN, vals[newV]).apply());
+    }
+
     // ---------------------------------------------------------------- 锁机白名单
 
     private void ensureDefaultWhitelist() {
@@ -462,8 +489,7 @@ public class MainActivity extends Activity {
 
     private String appLabel(String pkg) {
         try {
-            PackageManager pm = getPackageManager();
-            return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() + "  (" + pkg + ")";
+            return getPackageManager().getApplicationLabel(getPackageManager().getApplicationInfo(pkg, 0)).toString();
         } catch (Exception e) {
             return pkg;
         }
@@ -483,28 +509,54 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "未找到可添加的应用", Toast.LENGTH_SHORT).show();
             return;
         }
-        String[] labels = new String[apps.size()];
-        for (int i = 0; i < apps.size(); i++) {
-            CharSequence lb = apps.get(i).loadLabel(getPackageManager());
-            labels[i] = lb != null ? lb.toString() : apps.get(i).activityInfo.packageName;
-        }
         new AlertDialog.Builder(this)
                 .setTitle("选择要放行的软件")
-                .setItems(labels, (d, which) -> {
-                    String pkg = apps.get(which).activityInfo.packageName;
-                    if (whitelistSet().contains(pkg)) {
-                        Toast.makeText(this, "已在白名单中", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Set<String> s = new HashSet<>(whitelistSet());
-                        s.add(pkg);
-                        getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
-                                .edit().putStringSet(ScreenGuardService.KEY_WHITELIST, s).apply();
-                        Toast.makeText(this, "已添加：" + appLabel(pkg), Toast.LENGTH_SHORT).show();
+                .setAdapter(new BaseAdapter() {
+                    public int getCount() { return apps.size(); }
+                    public Object getItem(int i) { return apps.get(i); }
+                    public long getItemId(int i) { return i; }
+                    public View getView(int i, View cv, ViewGroup pg) {
+                        ResolveInfo ri = apps.get(i);
+                        if (cv == null) {
+                            LinearLayout row = new LinearLayout(MainActivity.this);
+                            row.setOrientation(LinearLayout.HORIZONTAL);
+                            row.setGravity(Gravity.CENTER_VERTICAL);
+                            row.setPadding(16, 12, 16, 12);
+                            ImageView iv = new ImageView(MainActivity.this);
+                            iv.setImageDrawable(ri.loadIcon(getPackageManager()));
+                            iv.setLayoutParams(new LinearLayout.LayoutParams(dp(40), dp(40)));
+                            row.addView(iv);
+                            TextView tv = new TextView(MainActivity.this);
+                            tv.setText(ri.loadLabel(getPackageManager()));
+                            tv.setTextSize(15);
+                            tv.setTextColor(0xFF212121);
+                            tv.setPadding(dp(12), 0, 0, 0);
+                            tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                            row.addView(tv);
+                            return row;
+                        }
+                        return cv;
                     }
-                    renderWhitelist();
-                })
+                }, (d, which) -> addWhitelistPkg(apps.get(which).activityInfo.packageName))
                 .setNegativeButton("取消", null)
                 .show();
+    }
+
+    private void addWhitelistPkg(String pkg) {
+        if (whitelistSet().contains(pkg)) {
+            Toast.makeText(this, "已在白名单中", Toast.LENGTH_SHORT).show();
+        } else {
+            Set<String> s = new HashSet<>(whitelistSet());
+            s.add(pkg);
+            getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                    .edit().putStringSet(ScreenGuardService.KEY_WHITELIST, s).apply();
+            Toast.makeText(this, "已添加：" + appLabel(pkg), Toast.LENGTH_SHORT).show();
+        }
+        renderWhitelist();
+    }
+
+    private int dp(int v) {
+        return (int) (v * getResources().getDisplayMetrics().density);
     }
 
     // ---------------------------------------------------------------- 更换提醒图片

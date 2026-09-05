@@ -13,8 +13,9 @@ public final class LockGuard {
 
     public static final String KEY_LOCK_UNTIL = "lock_until";
     public static final String KEY_LOCK_DURATION_MIN = "lock_dur_min";
-    public static final int DEFAULT_LOCK_MIN = 20;           // 默认锁机 20 分钟（记录页可改 2-120）
-    public static final int FUN_THRESHOLD_MIN = 120;          // 娱乐累计 120 分钟（2 小时）触发
+    public static final String KEY_FUN_THRESHOLD_MIN = "fun_threshold";
+    public static final int DEFAULT_LOCK_MIN = 20;                     // 默认锁机 20 分钟（记录页可改 2-120）
+    public static final int DEFAULT_FUN_THRESHOLD_MIN = 120;           // 默认每日允许娱乐 120 分钟
     public static final long DAY_MS = 24 * 3600_000L;
 
     private static final String PREF = ScreenGuardService.PREF_NAME;
@@ -42,6 +43,11 @@ public final class LockGuard {
         return min * 60_000L;
     }
 
+    /** 今日允许的娱乐分钟数（记录页可设置），超过则触发锁机 */
+    public static int getFunThresholdMin(Context c) {
+        return prefs(c).getInt(KEY_FUN_THRESHOLD_MIN, DEFAULT_FUN_THRESHOLD_MIN);
+    }
+
     public static void clearLock(Context c) {
         prefs(c).edit().putLong(KEY_LOCK_UNTIL, 0).apply();
     }
@@ -61,7 +67,7 @@ public final class LockGuard {
             long ds = cal.getTimeInMillis();
             StatDb.DayStat st = db.dayStats(ds, ds + DAY_MS);
             db.close();
-            if (st.funMs >= FUN_THRESHOLD_MIN * 60_000L) {
+            if (st.funMs >= getFunThresholdMin(c) * 60_000L) {
                 setLock(c);
                 LockOverlay.show(c.getApplicationContext());
             }
