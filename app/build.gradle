@@ -14,9 +14,23 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        // 固定签名：所有构建用同一个密钥，保证"覆盖安装"（权限/记录保留）
+        release {
+            storeFile file("../keystore/debug.jks")
+            storePassword "dshdebug"
+            keyAlias "dsh"
+            keyPassword "dshdebug"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
+        }
+        debug {
+            signingConfig signingConfigs.release
         }
     }
 
