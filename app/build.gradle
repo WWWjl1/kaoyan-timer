@@ -10,7 +10,7 @@ android {
         applicationId "com.screenguard.timer"
         minSdk 26          // Android 8.0 及以上
         targetSdk 33
-        versionCode 1
+        versionCode (project.hasProperty('vc') ? project.property('vc').toString().toInteger() : 1)
         versionName "1.0"
     }
 
