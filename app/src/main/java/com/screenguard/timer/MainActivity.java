@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
         @Override
         public void run() {
             updateStatusText();
+            updateTodayCounters();
             handler.postDelayed(this, 1000);
         }
     };
@@ -205,6 +206,19 @@ public class MainActivity extends Activity {
             statusText.setText("到点提醒中：点悬浮窗图片即锁屏");
         } else {
             statusText.setText("监测中 · 锁屏后再亮屏会弹出用途+时长选择");
+        }
+    }
+
+    /** 每秒刷新主页"学习中/娱乐中"倒计时 */
+    private void updateTodayCounters() {
+        boolean counting = ScreenGuardService.state == ScreenGuardService.STATE_COUNTING;
+        long remainSec = counting ? Math.max(0,
+                (ScreenGuardService.countdownEndMs - System.currentTimeMillis()) / 1000) : 0;
+        if (counting && "study".equals(ScreenGuardService.currentPurpose)) {
+            todayStudy.setText((remainSec / 60) + "分" + (remainSec % 60) + "秒");
+        }
+        if (counting && "fun".equals(ScreenGuardService.currentPurpose)) {
+            todayFun.setText((remainSec / 60) + "分" + (remainSec % 60) + "秒");
         }
     }
 
