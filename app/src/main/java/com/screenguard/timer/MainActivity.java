@@ -225,9 +225,20 @@ public class MainActivity extends Activity {
 
             StatDb.DayStat ds = db.dayStats(dayStart, dayStart + DAY_MS);
             int total = Math.round((ds.studyMs + ds.funMs) / 60000f);
-            todayTotal.setText(String.valueOf(total));
-            todayStudy.setText(String.valueOf(Math.round(ds.studyMs / 60000f)));
-            todayFun.setText(String.valueOf(Math.round(ds.funMs / 60000f)));
+            todayTotal.setText(total + " 分");
+            boolean counting = ScreenGuardService.state == ScreenGuardService.STATE_COUNTING;
+            long remainSec = counting
+                    ? Math.max(0, (ScreenGuardService.countdownEndMs - System.currentTimeMillis()) / 1000) : 0;
+            if (counting && "study".equals(ScreenGuardService.currentPurpose)) {
+                todayStudy.setText((remainSec / 60) + "分" + (remainSec % 60) + "秒");
+            } else {
+                todayStudy.setText(Math.round(ds.studyMs / 60000f) + " 分");
+            }
+            if (counting && "fun".equals(ScreenGuardService.currentPurpose)) {
+                todayFun.setText((remainSec / 60) + "分" + (remainSec % 60) + "秒");
+            } else {
+                todayFun.setText(Math.round(ds.funMs / 60000f) + " 分");
+            }
 
             long[] study = new long[24];
             long[] fun = new long[24];

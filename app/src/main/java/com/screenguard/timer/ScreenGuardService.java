@@ -62,7 +62,7 @@ public class ScreenGuardService extends Service {
     private Runnable pendingLaunch;   // 延迟弹出选时长界面
     private Runnable tick;            // 倒计时每秒滴答
     private int tickCounter = 0;      // 用于每约 10 秒刷新一次"最近活跃时刻"
-    private String currentPurpose = "fun";  // 本轮用途（判断惩罚娱乐用）
+    public static volatile String currentPurpose = "fun";  // 本轮用途（判断惩罚娱乐/主页展示用）
 
     private StatDb db;
     private NotificationManager nm;
