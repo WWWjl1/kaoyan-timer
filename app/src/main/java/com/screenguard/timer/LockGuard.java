@@ -18,6 +18,8 @@ public final class LockGuard {
     public static final String KEY_FUN_THRESHOLD_MIN = "fun_threshold";
     public static final String KEY_PUNISH = "punish_mode";
     public static final String KEY_PUNISH_REMAIN = "punish_remain_ms";
+    public static final String KEY_FORCE_LOCK = "force_lock";
+    public static final String KEY_FORCE_PASS = "force_pass";
     public static final int DEFAULT_LOCK_MIN = 20;                     // 默认锁机 20 分钟（记录页可改 2-120）
     public static final int DEFAULT_FUN_THRESHOLD_MIN = 120;           // 默认每日允许娱乐 120 分钟
     public static final long PUNISH_DURATION_MS = 20 * 60_000L;        // 惩罚模式每次娱乐固定 20 分钟
@@ -53,6 +55,23 @@ public final class LockGuard {
 
     public static void clearLock(Context c) {
         prefs(c).edit().putLong(KEY_LOCK_UNTIL, 0).apply();
+    }
+
+    // -------- 强制锁机（需口令退出） --------
+    public static boolean isForce(Context c) {
+        return prefs(c).getBoolean(KEY_FORCE_LOCK, false);
+    }
+
+    public static void setForce(Context c, boolean v) {
+        prefs(c).edit().putBoolean(KEY_FORCE_LOCK, v).apply();
+    }
+
+    public static String getForcePass(Context c) {
+        return prefs(c).getString(KEY_FORCE_PASS, "");
+    }
+
+    public static void setForcePass(Context c, String s) {
+        prefs(c).edit().putString(KEY_FORCE_PASS, s).apply();
     }
 
     // -------- 惩罚模式 --------

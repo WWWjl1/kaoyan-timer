@@ -54,7 +54,8 @@ public class MainActivity extends Activity {
     private LinearLayout weekTable;
     private TextView imageStatus;
     private HourBarView hourBar;
-    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit, btnImgPos, btnImgScale;
+    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit, btnImgPos, btnImgScale, btnForceLock;
+    private android.widget.EditText forcePassInput;
     private NumberPicker lockDurPicker;
     private NumberPicker funThresholdPicker;
 
@@ -103,6 +104,8 @@ public class MainActivity extends Activity {
         btnChange = findViewById(R.id.btn_change_image);
         btnImgPos = findViewById(R.id.btn_img_pos);
         btnImgScale = findViewById(R.id.btn_img_scale);
+        btnForceLock = findViewById(R.id.btn_force_lock);
+        forcePassInput = findViewById(R.id.force_pass_input);
         lockDurPicker = findViewById(R.id.lock_dur_picker);
         funThresholdPicker = findViewById(R.id.fun_threshold_picker);
         pageWhitelist = findViewById(R.id.page_whitelist);
@@ -151,6 +154,7 @@ public class MainActivity extends Activity {
 
         initImageSetting();
         initLockDurationPicker();
+        initForceSetting();
         initFunThresholdPicker();
         ensureDefaultWhitelist();
         renderWhitelist();
@@ -475,6 +479,29 @@ public class MainActivity extends Activity {
         int scale = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
                 .getInt(OverlayManager.KEY_IMG_SCALE, 1);
         btnImgScale.setText("大小：" + IMG_SCALE[scale]);
+    }
+
+    /** 强制锁机：退出口令设置 + 开启/关闭按钮 */
+    private void initForceSetting() {
+        forcePassInput.setText(LockGuard.getForcePass(this));
+        forcePassInput.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+                LockGuard.setForcePass(MainActivity.this, s.toString());
+            }
+            public void afterTextChanged(android.text.Editable e) {}
+        });
+        refreshForceLockBtn();
+        btnForceLock.setOnClickListener(v -> {
+            boolean on = LockGuard.isForce(this);
+            LockGuard.setForce(this, !on);
+            refreshForceLockBtn();
+            Toast.makeText(this, on ? "已关闭强制锁机" : "已开启强制锁机（打开非学习软件会拦下，输入口令退出）", Toast.LENGTH_LONG).show();
+        });
+    }
+
+    private void refreshForceLockBtn() {
+        btnForceLock.setText(LockGuard.isForce(this) ? "关闭强制锁机" : "开启强制锁机");
     }
 
     // ---------------------------------------------------------------- 锁机白名单

@@ -48,15 +48,21 @@ public class AccessLockService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // 未处于锁机状态：什么都不做
-        if (!LockGuard.isLocked(this)) return;
         CharSequence pkg = event.getPackageName();
-        if (isWhitelisted(pkg)) return;
-        // 非白名单应用出现在前台：显示锁机横幅 + 拉回桌面
-        LockOverlay.show(this);
-        try {
-            performGlobalAction(GLOBAL_ACTION_HOME);
-        } catch (Exception ignored) {
+        if (LockGuard.isLocked(this)) {
+            // 定时锁机：非白名单应用显示横幅 + 拉回桌面
+            if (isWhitelisted(pkg)) return;
+            LockOverlay.show(this);
+            try {
+                performGlobalAction(GLOBAL_ACTION_HOME);
+            } catch (Exception ignored) {
+            }
+            return;
+        }
+        if (LockGuard.isForce(this)) {
+            // 强制锁机：非白名单应用弹出用户设置的图片界面（输入口令才退出）
+            if (isWhitelisted(pkg)) return;
+            ForceOverlay.show(this);
         }
     }
 
