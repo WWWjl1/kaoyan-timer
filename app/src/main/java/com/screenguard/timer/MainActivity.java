@@ -44,6 +44,8 @@ public class MainActivity extends Activity {
     private static final long DAY_MS = 24 * 3600_000L;
     private static final int C_ACTIVE = Color.parseColor("#3F51B5");
     private static final int C_INACTIVE = Color.parseColor("#757575");
+    private static final String[] IMG_POS = {"顶部", "居中", "底部"};
+    private static final String[] IMG_SCALE = {"小", "中", "大"};
 
     private StatDb db;
     private Switch enableSwitch;
@@ -52,7 +54,7 @@ public class MainActivity extends Activity {
     private LinearLayout weekTable;
     private TextView imageStatus;
     private HourBarView hourBar;
-    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit;
+    private Button btnOverlay, btnDevice, btnBattery, btnNotif, btnChange, btnAccessibility, btnExit, btnImgPos, btnImgScale;
     private NumberPicker lockDurPicker;
     private NumberPicker funThresholdPicker;
 
@@ -99,6 +101,8 @@ public class MainActivity extends Activity {
         btnAccessibility = findViewById(R.id.btn_accessibility);
         btnExit = findViewById(R.id.btn_exit);
         btnChange = findViewById(R.id.btn_change_image);
+        btnImgPos = findViewById(R.id.btn_img_pos);
+        btnImgScale = findViewById(R.id.btn_img_scale);
         lockDurPicker = findViewById(R.id.lock_dur_picker);
         funThresholdPicker = findViewById(R.id.fun_threshold_picker);
         pageWhitelist = findViewById(R.id.page_whitelist);
@@ -145,6 +149,7 @@ public class MainActivity extends Activity {
         btnChange.setOnClickListener(v -> openImagePicker());
         btnAddWhitelist.setOnClickListener(v -> onAddWhitelist());
 
+        initImageSetting();
         initLockDurationPicker();
         initFunThresholdPicker();
         ensureDefaultWhitelist();
@@ -427,6 +432,38 @@ public class MainActivity extends Activity {
         funThresholdPicker.setOnValueChangedListener((p, oldV, newV) ->
                 getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
                         .edit().putInt(LockGuard.KEY_FUN_THRESHOLD_MIN, vals[newV]).apply());
+    }
+
+    /** 提醒图片位置/大小设置（点击循环切换，改动即生效） */
+    private void initImageSetting() {
+        refreshImgPosLabel();
+        refreshImgScaleLabel();
+        btnImgPos.setOnClickListener(v -> {
+            int cur = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                    .getInt(OverlayManager.KEY_IMG_POS, 1);
+            getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                    .edit().putInt(OverlayManager.KEY_IMG_POS, (cur + 1) % 3).apply();
+            refreshImgPosLabel();
+        });
+        btnImgScale.setOnClickListener(v -> {
+            int cur = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                    .getInt(OverlayManager.KEY_IMG_SCALE, 1);
+            getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                    .edit().putInt(OverlayManager.KEY_IMG_SCALE, (cur + 1) % 3).apply();
+            refreshImgScaleLabel();
+        });
+    }
+
+    private void refreshImgPosLabel() {
+        int pos = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getInt(OverlayManager.KEY_IMG_POS, 1);
+        btnImgPos.setText("位置：" + IMG_POS[pos]);
+    }
+
+    private void refreshImgScaleLabel() {
+        int scale = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getInt(OverlayManager.KEY_IMG_SCALE, 1);
+        btnImgScale.setText("大小：" + IMG_SCALE[scale]);
     }
 
     // ---------------------------------------------------------------- 锁机白名单

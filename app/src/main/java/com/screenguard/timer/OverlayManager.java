@@ -27,6 +27,10 @@ public final class OverlayManager {
     private static WindowManager windowManager;
     private static Vibrator vibrator;
 
+    // 提醒图片显示设置
+    public static final String KEY_IMG_POS = "img_pos";      // 0 顶部 / 1 居中 / 2 底部
+    public static final String KEY_IMG_SCALE = "img_scale";  // 0 小 / 1 中 / 2 大
+
     private OverlayManager() {
     }
 
@@ -53,6 +57,8 @@ public final class OverlayManager {
             } else {
                 image.setImageResource(R.drawable.reminder_placeholder);
             }
+
+            applyImageStyle(app, image);
 
             // 显示今日已用时长
             TextView used = overlayView.findViewById(R.id.overlay_used);
@@ -166,6 +172,35 @@ public final class OverlayManager {
             return m;
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    /** 按用户设置应用提醒图片的显示位置与大小 */
+    private static void applyImageStyle(Context app, ImageView image) {
+        try {
+            android.content.SharedPreferences pref = app.getSharedPreferences(
+                    ScreenGuardService.PREF_NAME, Context.MODE_PRIVATE);
+            int pos = pref.getInt(KEY_IMG_POS, 1);     // 0 顶部 / 1 居中 / 2 底部
+            int scale = pref.getInt(KEY_IMG_SCALE, 1); // 0 小 / 1 中 / 2 大
+            View panel = overlayView.findViewById(R.id.overlay_panel);
+            if (panel != null) {
+                android.widget.FrameLayout.LayoutParams lp =
+                        (android.widget.FrameLayout.LayoutParams) panel.getLayoutParams();
+                lp.gravity = pos == 0 ? android.view.Gravity.TOP
+                        : (pos == 2 ? android.view.Gravity.BOTTOM : android.view.Gravity.CENTER);
+                panel.setLayoutParams(lp);
+            }
+            int size = scale == 0 ? 200 : (scale == 2 ? 360 : 280);
+            float d = app.getResources().getDisplayMetrics().density;
+            int px = (int) (size * d);
+            android.widget.LinearLayout.LayoutParams ilp =
+                    (android.widget.LinearLayout.LayoutParams) image.getLayoutParams();
+            if (ilp != null) {
+                ilp.width = px;
+                ilp.height = px;
+                image.setLayoutParams(ilp);
+            }
+        } catch (Exception ignored) {
         }
     }
 }
