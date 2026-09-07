@@ -305,7 +305,7 @@ public class ScreenGuardService extends Service {
                     if (++tickCounter % 20 == 0) {
                         android.content.SharedPreferences.Editor e = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
                                 .edit().putLong(KEY_LAST_ACTIVE, System.currentTimeMillis());
-                        if (LockGuard.isPunish(this) && "fun".equals(currentPurpose)) {
+                        if (LockGuard.isPunish(ScreenGuardService.this) && "fun".equals(currentPurpose)) {
                             e.putLong(LockGuard.KEY_PUNISH_REMAIN, remain);
                         }
                         e.apply();
