@@ -68,8 +68,8 @@ public final class ForceOverlay {
         String pass = LockGuard.getForcePass(app);
         String input = et.getText() != null ? et.getText().toString().trim() : "";
         if (input.length() > 0 && input.equals(pass)) {
-            // 口令只临时放行"当前这个软件"一次，强制锁机模式保持（彻底关闭去 App 点"关闭强制锁机"）
-            AccessLockService.release();
+            // 口令放行本次亮屏，强制锁机模式保持（息屏后重新上锁；彻底关闭去 App 点"关闭强制锁机"）
+            AccessLockService.releaseScreen();
             dismiss(app);
         } else {
             Toast.makeText(app, "口令不对，无法退出", Toast.LENGTH_SHORT).show();

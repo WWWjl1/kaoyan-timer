@@ -16,8 +16,7 @@ public class AccessLockService extends AccessibilityService {
 
     private static boolean enabled = false;
     private static AccessLockService instance;
-    private static String pendingPkg;   // 当前被强制锁机拦住的软件包名
-    private static String releasedPkg;  // 口令临时放行的软件包名
+    private static boolean releasedScreen = false; // 本次亮屏是否已用口令放行
 
     public static boolean isEnabled() {
         return enabled;
@@ -62,17 +61,20 @@ public class AccessLockService extends AccessibilityService {
             return;
         }
         if (LockGuard.isForce(this)) {
+            if (releasedScreen) return; // 本次亮屏已用口令放行，全部通行
             if (isWhitelisted(pkg)) return;
-            if (pkg != null && pkg.toString().equals(releasedPkg)) return; // 口令放行过的软件
-            pendingPkg = pkg != null ? pkg.toString() : "";
             ForceOverlay.show(this);
         }
     }
 
-    /** 口令放行：临时放过当前被拦的软件（强制锁机模式保持，关闭只能走 App 按钮） */
-    static void release() {
-        releasedPkg = pendingPkg;
-        pendingPkg = null;
+    /** 口令放行本次亮屏：本次亮屏期间所有软件通行（息屏后失效） */
+    static void releaseScreen() {
+        releasedScreen = true;
+    }
+
+    /** 息屏后重新上锁：下次亮屏需再输一次口令 */
+    static void resetScreen() {
+        releasedScreen = false;
     }
 
     /** 锁机期间允许的包名：系统/电话/桌面/设置 + 三个学习 App */

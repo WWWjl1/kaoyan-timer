@@ -202,6 +202,8 @@ public class ScreenGuardService extends Service {
     }
 
     private void screenOff() {
+        // 息屏后强制锁机重新上锁（下次亮屏需再输一次口令）
+        AccessLockService.resetScreen();
         cancelPendingLaunch();
         if (state == STATE_COUNTING) {
             long nowMs = System.currentTimeMillis();
