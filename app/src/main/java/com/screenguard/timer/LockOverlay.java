@@ -92,5 +92,7 @@ public final class LockOverlay {
         }
         view = null;
         LockGuard.clearLock(context);
+        // 锁机结束 -> 进入惩罚模式（之后每次娱乐固定 20 分钟额度）
+        LockGuard.enterPunish(context);
     }
 }

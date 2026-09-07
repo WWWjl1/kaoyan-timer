@@ -62,6 +62,7 @@ public class ScreenGuardService extends Service {
     private Runnable pendingLaunch;   // 延迟弹出选时长界面
     private Runnable tick;            // 倒计时每秒滴答
     private int tickCounter = 0;      // 用于每约 10 秒刷新一次"最近活跃时刻"
+    private String currentPurpose = "fun";  // 本轮用途（判断惩罚娱乐用）
 
     private StatDb db;
     private NotificationManager nm;
@@ -117,6 +118,20 @@ public class ScreenGuardService extends Service {
         }
     }
 
+    /** 亮屏时检测无障碍权限，若被关掉则引导用户开启（自动锁屏/锁机需要它） */
+    private void ensureAccessibility() {
+        if (AccessLockService.isEnabled()) return;
+        boolean asked = getSharedPreferences(PREF_NAME, MODE_PRIVATE).getBoolean("acc_asked", false);
+        if (!asked) {
+            getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit().putBoolean("acc_asked", true).apply();
+            AccessLockService.openSettings(this);
+        } else {
+            android.widget.Toast.makeText(this,
+                    "无障碍未开启：请到设置开启「考研自律钟」的无障碍（自动锁屏/锁机需要它）",
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
     /** 注册亮屏/息屏/解锁监听（Android 8+ 必须在运行时动态注册才能收到） */
     private void registerScreenReceiver() {
         try {
@@ -163,6 +178,7 @@ public class ScreenGuardService extends Service {
     // ---------------------------------------------------------------- 事件处理
 
     private void screenOn() {
+        ensureAccessibility();
         if (state == STATE_IDLE && !PickerOverlay.isShowing() && isEnabled(this) && canDrawOverlays()) {
             KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
             boolean locked = km != null && km.isKeyguardLocked();
@@ -175,6 +191,7 @@ public class ScreenGuardService extends Service {
     }
 
     private void userPresent() {
+        ensureAccessibility();
         if (state == STATE_ALERT) {
             // 之前到点提醒没来得及点就被息屏了，解锁后把提醒图片重新弹出来
             OverlayManager.show(this);
@@ -187,13 +204,19 @@ public class ScreenGuardService extends Service {
     private void screenOff() {
         cancelPendingLaunch();
         if (state == STATE_COUNTING) {
+            long nowMs = System.currentTimeMillis();
             // 中途息屏 = 本轮结束
-            db.closeRound(roundId, System.currentTimeMillis());
+            db.closeRound(roundId, nowMs);
             roundId = -1;
             state = STATE_IDLE;
             cancelTick();
             updateNotification(getString(R.string.notif_monitoring));
-            LockGuard.maybeEnterLock(this);
+            if (LockGuard.isPunish(this) && "fun".equals(currentPurpose)) {
+                // 惩罚娱乐：中途息屏 = 暂停，保留剩余额度（下次亮屏选娱乐继计）
+                LockGuard.setPunishRemain(this, Math.max(0, countdownEndMs - nowMs));
+            } else {
+                LockGuard.maybeEnterLock(this);
+            }
         } else if (state == STATE_ALERT) {
             // 屏幕关了，悬浮窗自动收起；状态保留 ALERT，解锁后重新弹出
             OverlayManager.dismiss(getApplicationContext(), false);
@@ -249,13 +272,20 @@ public class ScreenGuardService extends Service {
 
         long now = System.currentTimeMillis();
         state = STATE_COUNTING;
-        countdownEndMs = now + minutes * 60_000L;
-        roundId = db.openRound(now, minutes, purpose);
+        currentPurpose = purpose;
+        long durationMs = minutes * 60_000L;
+        // 惩罚模式下娱乐固定使用剩余额度（不再自由选择）
+        if (LockGuard.isPunish(this) && "fun".equals(purpose)) {
+            durationMs = LockGuard.getPunishRemain(this);
+        }
+        countdownEndMs = now + durationMs;
+        roundId = db.openRound(now, (int) (durationMs / 60_000L), purpose);
         tickCounter = 0;
 
         getSharedPreferences(PREF_NAME, MODE_PRIVATE)
                 .edit().putInt(KEY_LAST_MINUTES, minutes)
-                .putLong(KEY_LAST_ACTIVE, now).apply();
+                .putLong(KEY_LAST_ACTIVE, now)
+                .putLong(LockGuard.KEY_PUNISH_REMAIN, durationMs).apply();
 
         updateNotification("已开始：" + minutes + " 分钟，到点会提醒你");
 
@@ -271,10 +301,14 @@ public class ScreenGuardService extends Service {
                     if (sec % 60 == 0) {
                         updateNotification("剩余 " + (sec / 60) + " 分钟");
                     }
-                    // 每约 10 秒记录一次"最近活跃时刻"，供被杀时结清用（息屏后 tick 已停止，不会把息屏算进去）
+                    // 每约 10 秒记录一次"最近活跃时刻"/惩罚剩余，供被杀/息屏时结清用
                     if (++tickCounter % 20 == 0) {
-                        getSharedPreferences(PREF_NAME, MODE_PRIVATE)
-                                .edit().putLong(KEY_LAST_ACTIVE, System.currentTimeMillis()).apply();
+                        android.content.SharedPreferences.Editor e = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                                .edit().putLong(KEY_LAST_ACTIVE, System.currentTimeMillis());
+                        if (LockGuard.isPunish(this) && "fun".equals(currentPurpose)) {
+                            e.putLong(LockGuard.KEY_PUNISH_REMAIN, remain);
+                        }
+                        e.apply();
                     }
                     handler.postDelayed(this, 500);
                 }
@@ -291,13 +325,20 @@ public class ScreenGuardService extends Service {
     }
 
     private void timeUp() {
-        state = STATE_ALERT;
         cancelTick();
         db.closeRound(roundId, System.currentTimeMillis());
         roundId = -1;
         updateNotification(getString(R.string.notif_timeup));
-        OverlayManager.show(this);
-        LockGuard.maybeEnterLock(this);
+        if (LockGuard.isPunish(this) && "fun".equals(currentPurpose)) {
+            // 惩罚娱乐到点/额度用尽 -> 直接锁机（不弹提醒图片）
+            state = STATE_IDLE;
+            LockGuard.setLock(this);
+            LockOverlay.show(this);
+        } else {
+            state = STATE_ALERT;
+            OverlayManager.show(this);
+            LockGuard.maybeEnterLock(this);
+        }
     }
 
     // ---------------------------------------------------------------- 通知
