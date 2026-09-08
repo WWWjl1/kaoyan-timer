@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
 
     private StatDb db;
     private Switch enableSwitch;
+    private Switch switchVibrate;
     private TextView statusText;
     private TextView todayTotal, todayStudy, todayFun;
     private LinearLayout weekTable;
@@ -104,6 +105,7 @@ public class MainActivity extends Activity {
         btnBattery = findViewById(R.id.btn_battery);
         btnNotif = findViewById(R.id.btn_notif);
         btnAccessibility = findViewById(R.id.btn_accessibility);
+        switchVibrate = findViewById(R.id.switch_vibrate);
         btnExit = findViewById(R.id.btn_exit);
         btnChange = findViewById(R.id.btn_change_image);
         btnImgPos = findViewById(R.id.btn_img_pos);
@@ -161,6 +163,7 @@ public class MainActivity extends Activity {
         initImageSetting();
         initLockDurationPicker();
         initForceSetting();
+        initVibrateSwitch();
         initFunThresholdPicker();
         ensureDefaultWhitelist();
         renderWhitelist();
@@ -551,6 +554,16 @@ public class MainActivity extends Activity {
 
     private void refreshForceLockBtn() {
         btnForceLock.setText(LockGuard.isForce(this) ? "关闭强制锁机" : "开启强制锁机");
+    }
+
+    /** 提示方式：到点震动开关 */
+    private void initVibrateSwitch() {
+        boolean v = getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                .getBoolean(ScreenGuardService.KEY_VIBRATE, true);
+        switchVibrate.setChecked(v);
+        switchVibrate.setOnCheckedChangeListener((b, c) ->
+                getSharedPreferences(ScreenGuardService.PREF_NAME, MODE_PRIVATE)
+                        .edit().putBoolean(ScreenGuardService.KEY_VIBRATE, c).apply());
     }
 
     // ---------------------------------------------------------------- 锁机白名单

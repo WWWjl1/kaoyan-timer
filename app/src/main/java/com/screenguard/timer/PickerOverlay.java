@@ -36,14 +36,20 @@ public final class PickerOverlay {
         return Settings.canDrawOverlays(context);
     }
 
-    // 学习 5..60 步5（不含0）；娱乐 2..30 步2（不含0）
-    private static int[] buildMinutes(boolean study) {
+    // 学习 5..60 步5；娱乐：正常 2..30 步2；超上限后 2..10 步2
+    private static int[] buildMinutes(boolean study, Context c) {
         if (study) {
             int n = 12; // 5,10,...,60
             int[] a = new int[n];
             for (int i = 0; i < n; i++) a[i] = (i + 1) * 5;
             return a;
         } else {
+            if (LockGuard.isPunish(c)) {
+                int n = 5; // 2,4,6,8,10
+                int[] a = new int[n];
+                for (int i = 0; i < n; i++) a[i] = (i + 1) * 2;
+                return a;
+            }
             int n = 15; // 2,4,...,30
             int[] a = new int[n];
             for (int i = 0; i < n; i++) a[i] = (i + 1) * 2;
@@ -127,12 +133,12 @@ public final class PickerOverlay {
 
     // 记录当前模式，供按钮读取
     private static boolean currentStudy = true;
-    private static int[] minutesCurrent = buildMinutes(true);
+    private static int[] minutesCurrent;
 
     private static void applyMode(Context ctx, TextView title, View purposeSection,
                                   View timerSection, NumberPicker picker, boolean study) {
         currentStudy = study;
-        minutesCurrent = buildMinutes(study);
+        minutesCurrent = buildMinutes(study, ctx);
         String[] labels = new String[minutesCurrent.length];
         for (int i = 0; i < minutesCurrent.length; i++) {
             labels[i] = minutesCurrent[i] + " 分钟";

@@ -40,6 +40,7 @@ public class ScreenGuardService extends Service {
     public static final String KEY_SUSPENDED = "suspended";
     public static final String KEY_WHITELIST = "whitelist";
     public static final String KEY_LAST_ACTIVE = "last_active";
+    public static final String KEY_VIBRATE = "vibrate";
 
     public static final int STATE_IDLE = 0;
     public static final int STATE_COUNTING = 1;
@@ -63,6 +64,7 @@ public class ScreenGuardService extends Service {
     private Runnable tick;            // 倒计时每秒滴答
     private int tickCounter = 0;      // 用于每约 10 秒刷新一次"最近活跃时刻"
     public static volatile String currentPurpose = "fun";  // 本轮用途（判断惩罚娱乐/主页展示用）
+    private int currentMinutes = 0;                         // 本轮分钟数（超上限锁机用时）
 
     private StatDb db;
     private NotificationManager nm;
@@ -214,8 +216,8 @@ public class ScreenGuardService extends Service {
             cancelTick();
             updateNotification(getString(R.string.notif_monitoring));
             if (LockGuard.isPunish(this) && "fun".equals(currentPurpose)) {
-                // 惩罚娱乐：中途息屏 = 暂停，保留剩余额度（下次亮屏选娱乐继计）
-                LockGuard.setPunishRemain(this, Math.max(0, countdownEndMs - nowMs));
+                // 超上限娱乐：中途息屏 = 本轮结束，不锁机（下次亮屏重新选时间、重新计）
+                LockGuard.maybeEnterLock(this);
             } else {
                 LockGuard.maybeEnterLock(this);
             }
@@ -275,19 +277,15 @@ public class ScreenGuardService extends Service {
         long now = System.currentTimeMillis();
         state = STATE_COUNTING;
         currentPurpose = purpose;
-        long durationMs = minutes * 60_000L;
-        // 惩罚模式下娱乐固定使用剩余额度（不再自由选择）
-        if (LockGuard.isPunish(this) && "fun".equals(purpose)) {
-            durationMs = LockGuard.getPunishRemain(this);
-        }
+        currentMinutes = minutes;
+        long durationMs = minutes * 60_000L; // 超上限后娱乐 2-10，完成后锁本次时长
         countdownEndMs = now + durationMs;
-        roundId = db.openRound(now, (int) (durationMs / 60_000L), purpose);
+        roundId = db.openRound(now, minutes, purpose);
         tickCounter = 0;
 
         getSharedPreferences(PREF_NAME, MODE_PRIVATE)
                 .edit().putInt(KEY_LAST_MINUTES, minutes)
-                .putLong(KEY_LAST_ACTIVE, now)
-                .putLong(LockGuard.KEY_PUNISH_REMAIN, durationMs).apply();
+                .putLong(KEY_LAST_ACTIVE, now).apply();
 
         updateNotification("已开始：" + minutes + " 分钟，到点会提醒你");
 
@@ -305,12 +303,8 @@ public class ScreenGuardService extends Service {
                     }
                     // 每约 10 秒记录一次"最近活跃时刻"/惩罚剩余，供被杀/息屏时结清用
                     if (++tickCounter % 20 == 0) {
-                        android.content.SharedPreferences.Editor e = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
-                                .edit().putLong(KEY_LAST_ACTIVE, System.currentTimeMillis());
-                        if (LockGuard.isPunish(ScreenGuardService.this) && "fun".equals(currentPurpose)) {
-                            e.putLong(LockGuard.KEY_PUNISH_REMAIN, remain);
-                        }
-                        e.apply();
+                        getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                                .edit().putLong(KEY_LAST_ACTIVE, System.currentTimeMillis()).apply();
                     }
                     handler.postDelayed(this, 500);
                 }
@@ -332,9 +326,9 @@ public class ScreenGuardService extends Service {
         roundId = -1;
         updateNotification(getString(R.string.notif_timeup));
         if (LockGuard.isPunish(this) && "fun".equals(currentPurpose)) {
-            // 惩罚娱乐到点/额度用尽 -> 直接锁机（不弹提醒图片）
+            // 超上限后娱乐完成 -> 锁"本次娱乐时长"
             state = STATE_IDLE;
-            LockGuard.setLock(this);
+            LockGuard.lockFor(this, Math.max(2, currentMinutes));
             LockOverlay.show(this);
         } else {
             state = STATE_ALERT;

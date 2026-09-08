@@ -44,6 +44,12 @@ public final class LockGuard {
                 System.currentTimeMillis() + getLockDurationMs(c)).apply();
     }
 
+    /** 按指定分钟锁机（超上限后：娱乐完成即锁本次娱乐对应时长） */
+    public static void lockFor(Context c, int minutes) {
+        prefs(c).edit().putLong(KEY_LOCK_UNTIL,
+                System.currentTimeMillis() + minutes * 60_000L).apply();
+    }
+
     public static long getLockDurationMs(Context c) {
         int min = prefs(c).getInt(KEY_LOCK_DURATION_MIN, DEFAULT_LOCK_MIN);
         return min * 60_000L;

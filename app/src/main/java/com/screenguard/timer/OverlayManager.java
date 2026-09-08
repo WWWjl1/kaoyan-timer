@@ -84,7 +84,10 @@ public final class OverlayManager {
                     PixelFormat.TRANSLUCENT);
             windowManager.addView(overlayView, lp);
 
-            vibrate(app);
+            if (app.getSharedPreferences(ScreenGuardService.PREF_NAME, Context.MODE_PRIVATE)
+                    .getBoolean(ScreenGuardService.KEY_VIBRATE, true)) {
+                vibrate(app);
+            }
         } catch (Exception e) {
             overlayView = null;
         }
