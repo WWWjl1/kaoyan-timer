@@ -63,6 +63,8 @@ public class MainActivity extends Activity {
     private TextView tabToday, tabRecord, tabPerms, tabWhitelist;
     private LinearLayout whitelistContainer;
     private Button btnAddWhitelist;
+    private android.view.View colStudy, colFun;
+    private android.animation.ValueAnimator studyAnim, funAnim;
 
     private boolean refreshing = false;
 
@@ -72,6 +74,7 @@ public class MainActivity extends Activity {
         public void run() {
             updateStatusText();
             updateTodayCounters();
+            updateFlow();
             handler.postDelayed(this, 1000);
         }
     };
@@ -112,6 +115,8 @@ public class MainActivity extends Activity {
         pageWhitelist = findViewById(R.id.page_whitelist);
         whitelistContainer = findViewById(R.id.whitelist_container);
         btnAddWhitelist = findViewById(R.id.btn_add_whitelist);
+        colStudy = findViewById(R.id.col_study);
+        colFun = findViewById(R.id.col_fun);
 
         pageToday = findViewById(R.id.page_today);
         pageRecord = findViewById(R.id.page_record);
@@ -222,6 +227,35 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** 学习中/娱乐中卡片：处于该状态时做淡色流动背景（柔和、不刺眼） */
+    private void updateFlow() {
+        boolean counting = ScreenGuardService.state == ScreenGuardService.STATE_COUNTING;
+        boolean study = counting && "study".equals(ScreenGuardService.currentPurpose);
+        boolean fun = counting && "fun".equals(ScreenGuardService.currentPurpose);
+        if (study) {
+            if (studyAnim == null) studyAnim = createFlow(colStudy,
+                    new int[]{0xFFE8EAF6, 0xFFE0F7FA, 0xFFEDE7F6}); // 淡蓝/青/紫
+            if (!studyAnim.isRunning()) studyAnim.start();
+            if (funAnim != null && funAnim.isRunning()) { funAnim.cancel(); funAnim = null; }
+        } else if (fun) {
+            if (funAnim == null) funAnim = createFlow(colFun,
+                    new int[]{0xFFFFF3E0, 0xFFFFEBEE, 0xFFF9FBE7}); // 淡橙/粉/黄
+            if (!funAnim.isRunning()) funAnim.start();
+            if (studyAnim != null && studyAnim.isRunning()) { studyAnim.cancel(); studyAnim = null; }
+        } else {
+            if (studyAnim != null && studyAnim.isRunning()) studyAnim.cancel();
+            if (funAnim != null && funAnim.isRunning()) funAnim.cancel();
+        }
+    }
+
+    private android.animation.ValueAnimator createFlow(final View v, int[] cols) {
+        android.animation.ValueAnimator va = android.animation.ValueAnimator.ofArgb(cols[0], cols[1], cols[2], cols[0]);
+        va.setDuration(3200);
+        va.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        va.addUpdateListener(a -> v.setBackgroundColor((int) a.getAnimatedValue()));
+        return va;
+    }
+
     // ---------------------------------------------------------------- 刷新界面
 
     private void refresh() {
@@ -230,6 +264,7 @@ public class MainActivity extends Activity {
             boolean enabled = ScreenGuardService.isEnabled(this);
             enableSwitch.setChecked(enabled);
             updateStatusText();
+            updateFlow();
 
             long dayStart = startOfToday();
             // 只保留最近 7 天（今天 + 前 6 天），更早的删除
