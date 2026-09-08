@@ -246,8 +246,10 @@ public class MainActivity extends Activity {
             if (!funAnim.isRunning()) funAnim.start();
             if (studyAnim != null && studyAnim.isRunning()) { studyAnim.cancel(); studyAnim = null; }
         } else {
-            if (studyAnim != null && studyAnim.isRunning()) studyAnim.cancel();
-            if (funAnim != null && funAnim.isRunning()) funAnim.cancel();
+            if (studyAnim != null && studyAnim.isRunning()) { studyAnim.cancel(); studyAnim = null; }
+            if (funAnim != null && funAnim.isRunning()) { funAnim.cancel(); funAnim = null; }
+            colStudy.setBackgroundResource(R.drawable.bg_card);
+            colFun.setBackgroundResource(R.drawable.bg_card);
         }
     }
 
